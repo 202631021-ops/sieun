@@ -12,8 +12,7 @@
             --line-color: #E2E8F0;
             --text-color: #2D3748;
             --accent-pink: #FF8ACE;
-            --highlight-study: #718096;
-            --highlight-break: #CBD5E0;
+            --break-color: #E2E8F0;
         }
 
         body {
@@ -118,6 +117,15 @@
         }
         .contents-table td { padding: 8px 6px; border-bottom: 1px dashed #E2E8F0; font-size: 13px; }
 
+        .subject-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            color: #2D3748;
+        }
+
         .check-btn {
             cursor: pointer;
             font-weight: bold;
@@ -161,16 +169,14 @@
         .time-label { width: 25px; text-align: right; padding-right: 6px; color: #718096; font-weight: 600; }
         .time-bar {
             flex: 1; height: 100%; background: #EDF2F7; border-radius: 2px;
-            display: flex; align-items: center; padding-left: 6px; font-size: 10px; color: #fff;
+            display: flex; align-items: center; padding-left: 6px; font-size: 10px; color: #2D3748;
+            font-weight: 600;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
         }
-        .time-bar.active-study { background: var(--highlight-study); }
-        .time-bar.active-break { background: var(--highlight-break); color: #4A5568; }
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 15px; }
         .calendar-day-header { text-align: center; font-weight: bold; font-size: 12px; }
         .calendar-day-cell { background: #fff; border: 1px solid #E2E8F0; min-height: 70px; padding: 6px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-
-        .tip-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 10px; }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -183,7 +189,6 @@
     <!-- 탭 내비게이션 -->
     <div class="nav-tabs">
         <button class="active" onclick="switchPage('planner', this)">TODAY'S PLANNER</button>
-        <button onclick="switchPage('tips', this)">STUDY TIPS</button>
         <button onclick="switchPage('calendar', this)">MONTHLY CALENDAR</button>
     </div>
 
@@ -227,7 +232,7 @@
             <h4 style="margin-top: 15px;">2. 오늘 할 일 (CONTENTS)</h4>
             <div id="taskContainer">
                 <div class="row task-input-row">
-                    <input type="text" class="task-subject" placeholder="과목" style="width: 20%;">
+                    <input type="text" class="task-subject" placeholder="과목 (예: 수학)" style="width: 20%;">
                     <input type="text" class="task-desc" placeholder="세부 내용" style="width: 45%;">
                     <input type="number" class="task-min" placeholder="소요시간(분)" style="width: 18%;">
                     <select class="task-priority" style="width: 12%;">
@@ -246,8 +251,8 @@
                 <table class="contents-table">
                     <thead>
                         <tr>
-                            <th style="width:18%">과목</th>
-                            <th style="width:42%">CONTENTS</th>
+                            <th style="width:20%">과목</th>
+                            <th style="width:40%">CONTENTS</th>
                             <th style="width:25%">시간/수정</th>
                             <th style="width:15%; text-align:center;">체크</th>
                         </tr>
@@ -269,24 +274,7 @@
         </div>
     </div>
 
-    <!-- 2. 과목별 공부 팁 페이지 (복구됨) -->
-    <div id="tipsPage" class="page">
-        <h3>💡 과목별 공부 팁 (Subject Tips)</h3>
-        <div class="tip-card">
-            <strong>📐 수학:</strong> 개념 정리 후 오답 노트를 작성하며 유형별 문제 반복 풀이.
-        </div>
-        <div class="tip-card">
-            <strong>🇰🇷 국어:</strong> 비문학 지문은 구조 분석 중심으로, 문학은 작품의 상황과 정서 파악.
-        </div>
-        <div class="tip-card">
-            <strong>🇺🇸 영어:</strong> 매일 일정 수의 단어 암기 및 구문 독해 연습 필수.
-        </div>
-        <div class="tip-card">
-            <strong>🔬 탐구/사회:</strong> 핵심 키워드 중심의 백지 복습법 활용.
-        </div>
-    </div>
-
-    <!-- 3. 달력 페이지 -->
+    <!-- 2. 달력 페이지 -->
     <div id="calendarPage" class="page">
         <h3 style="margin-top:0;">📆 날짜별 계획 관리 (Monthly)</h3>
         <div class="calendar-grid" id="calendarGrid"></div>
@@ -297,7 +285,30 @@
 <script>
     let totalSeconds = 0;
     let timerInterval = null;
-    let currentTasksData = []; // 수정 기능을 위한 task 데이터 저장용
+
+    // 과목별 형광색 파스텔 팔레트
+    const neonPalette = [
+        '#FFB7B2', // 파스텔 피치/핑크
+        '#E2F0CB', // 파스텔 민트/라임
+        '#C7CEEA', // 파스텔 소라/바이올렛
+        '#FFDAC1', // 파스텔 옐로우 오렌지
+        '#B5EAD7', // 파스텔 그린
+        '#E0BBE4', // 파스텔 퍼플
+        '#FFF5BA'  // 파스텔 옐로우
+    ];
+
+    let subjectColorMap = {};
+    let colorIndex = 0;
+
+    // 과목명에 따라 고유 형광색 반환
+    function getSubjectColor(subject) {
+        const key = subject.trim();
+        if (!subjectColorMap[key]) {
+            subjectColorMap[key] = neonPalette[colorIndex % neonPalette.length];
+            colorIndex++;
+        }
+        return subjectColorMap[key];
+    }
 
     window.onload = function() {
         const today = new Date();
@@ -330,8 +341,6 @@
         
         if(pageId === 'planner') {
             document.getElementById('plannerPage').classList.add('active');
-        } else if(pageId === 'tips') {
-            document.getElementById('tipsPage').classList.add('active');
         } else {
             document.getElementById('calendarPage').classList.add('active');
             renderCalendar();
@@ -455,10 +464,11 @@
                     let studyMins = Math.min(task.duration, available);
                     let startTimeStr = formatMinutes(cur);
                     let endTimeStr = formatMinutes(cur + studyMins);
+                    let color = getSubjectColor(task.subject);
 
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td style="font-weight:bold;">${task.subject}</td>
+                        <td><span class="subject-tag" style="background-color: ${color};">${task.subject}</span></td>
                         <td>${task.desc}</td>
                         <td>
                             ${studyMins}분 (${startTimeStr}~${endTimeStr})<br>
@@ -470,13 +480,13 @@
                     `;
                     tbody.appendChild(tr);
 
-                    fillTimetable(cur, cur + studyMins, `${task.subject} - ${task.desc}`, 'study');
+                    fillTimetable(cur, cur + studyMins, `${task.subject} - ${task.desc}`, color);
 
                     cur += studyMins;
                     taskIdx++;
 
                     if(slot.end - cur >= 10) {
-                        fillTimetable(cur, cur + 10, '☕ 휴식', 'break');
+                        fillTimetable(cur, cur + 10, '☕ 휴식', '#CBD5E0');
                         cur += 10;
                     }
                 } else {
@@ -486,7 +496,6 @@
         });
     }
 
-    // 일찍 끝나거나 모자랄 때 각 항목별 시간 직접 수정 기능
     function modifyTaskTime(elementIndex, oldDuration) {
         const newDuration = prompt("변경할 소요 시간(분)을 입력하세요 (예: 시간이 덜 걸렸거나 모자란 경우):", oldDuration);
         if (newDuration !== null && !isNaN(newDuration) && newDuration.trim() !== "") {
@@ -495,7 +504,7 @@
         }
     }
 
-    function fillTimetable(startMins, endMins, title, type) {
+    function fillTimetable(startMins, endMins, title, color) {
         let startHour = Math.floor(startMins / 60);
         let endHour = Math.floor(endMins / 60);
 
@@ -503,7 +512,7 @@
             let bar = document.getElementById(`time-bar-${h}`);
             if(bar) {
                 bar.innerText = title;
-                bar.className = `time-bar ${type === 'study' ? 'active-study' : 'active-break'}`;
+                bar.style.backgroundColor = color;
             }
         }
     }
