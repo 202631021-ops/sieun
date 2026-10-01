@@ -1,211 +1,573 @@
-html_content = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘 뭐 먹지? - 저녁 메뉴 추천</title>
+    <title>스마트 스터디 플래너</title>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        :root {
+            --bg-color: #E2E8F0;
+            --paper-bg: #FDFDFB;
+            --line-color: #E2E8F0;
+            --text-color: #2D3748;
+            --accent-pink: #FF8ACE;
+            --highlight-study: #718096;
+            --highlight-break: #CBD5E0;
         }
 
         body {
-            background-color: #F8F9FA;
-            color: #333333;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
             padding: 20px;
-        }
-
-        .container {
-            background: #FFFFFF;
-            width: 100%;
-            max-width: 480px;
-            padding: 40px 28px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 6px 14px;
-            background-color: #FFF3E0;
-            color: #E65100;
-            font-weight: 700;
-            font-size: 14px;
-            border-radius: 20px;
-            margin-bottom: 16px;
-        }
-
-        h1 {
-            font-size: 26px;
-            font-weight: 800;
-            color: #1A1A1A;
-            margin-bottom: 8px;
-            word-break: keep-all;
-        }
-
-        .subtitle {
-            font-size: 15px;
-            color: #666666;
-            margin-bottom: 32px;
-        }
-
-        .display-card {
-            background-color: #FAFAFA;
-            border: 2px dashed #E0E0E0;
-            border-radius: 20px;
-            padding: 30px 20px;
-            margin-bottom: 28px;
-            min-height: 200px;
             display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            transition: all 0.3s ease;
         }
 
-        .emoji {
-            font-size: 80px;
-            line-height: 1;
-            margin-bottom: 16px;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            user-select: none;
-        }
-
-        .menu-name {
-            font-size: 22px;
-            font-weight: 700;
-            color: #222222;
-            margin-bottom: 6px;
-        }
-
-        .menu-desc {
-            font-size: 14px;
-            color: #777777;
-            word-break: keep-all;
-        }
-
-        .recommend-btn {
+        .binder-container {
             width: 100%;
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-            color: #FFFFFF;
-            border: none;
-            padding: 18px 0;
+            max-width: 850px;
+            background: var(--paper-bg);
             border-radius: 16px;
-            font-size: 18px;
-            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 30px;
+            box-sizing: border-box;
+            background-image: linear-gradient(var(--line-color) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--line-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 1px solid #CBD5E0;
+        }
+
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav-tabs button {
+            padding: 8px 16px;
+            border: 1px solid #CBD5E0;
+            background: #fff;
+            border-radius: 20px;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
-            transition: all 0.2s ease;
-            outline: none;
+            font-weight: 600;
+        }
+        .nav-tabs button.active { background: var(--text-color); color: #fff; }
+
+        .planner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--text-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
         }
 
-        .recommend-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(255, 107, 107, 0.45);
-        }
+        .header-box { text-align: center; }
+        .header-box .label { font-size: 11px; font-weight: 700; color: #718096; letter-spacing: 1px; }
+        .header-box .value { font-size: 28px; font-weight: 900; font-family: monospace; }
+        
+        .clickable { cursor: pointer; transition: color 0.2s; }
+        .clickable:hover { color: #3182CE; }
 
-        .recommend-btn:active {
-            transform: translateY(1px);
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        .quote-box {
+            font-family: 'Georgia', serif;
+            font-style: italic;
+            font-size: 19px;
+            font-weight: bold;
+            margin: 15px 0 25px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
+        .quote-heart { color: var(--accent-pink); font-size: 24px; }
 
-        /* 애니메이션 효과 */
-        .bounce {
-            animation: bounceAnim 0.4s ease;
+        .config-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #E2E8F0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
-
-        @keyframes bounceAnim {
-            0% { transform: scale(0.5); opacity: 0; }
-            60% { transform: scale(1.15); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        footer {
-            margin-top: 24px;
+        .config-card h4 { margin: 0 0 10px 0; font-size: 14px; }
+        .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        input, select { padding: 6px 10px; border: 1px solid #CBD5E0; border-radius: 4px; font-size: 13px; }
+        
+        button.btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #4A5568;
+            color: white;
+            cursor: pointer;
             font-size: 13px;
-            color: #999999;
+            font-weight: 600;
         }
+        button.btn-primary { background: #2B6CB0; }
+
+        .planner-body {
+            display: grid;
+            grid-template-columns: 1fr 220px;
+            gap: 20px;
+        }
+
+        .contents-table { width: 100%; border-collapse: collapse; }
+        .contents-table th {
+            border-bottom: 1px solid var(--text-color);
+            text-align: left;
+            padding: 6px;
+            font-size: 12px;
+            color: #718096;
+        }
+        .contents-table td { padding: 8px 6px; border-bottom: 1px dashed #E2E8F0; font-size: 13px; }
+
+        .check-btn {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            background: none;
+            border: 1px solid #CBD5E0;
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .check-btn.active {
+            background: #38A169;
+            color: white;
+            border-color: #38A169;
+        }
+
+        .btn-edit-time {
+            padding: 2px 6px;
+            font-size: 11px;
+            background: #EDF2F7;
+            border: 1px solid #CBD5E0;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .timetable-title {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--text-color);
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+        .timetable-grid { display: flex; flex-direction: column; gap: 2px; }
+        .time-row { display: flex; height: 22px; align-items: center; font-size: 11px; }
+        .time-label { width: 25px; text-align: right; padding-right: 6px; color: #718096; font-weight: 600; }
+        .time-bar {
+            flex: 1; height: 100%; background: #EDF2F7; border-radius: 2px;
+            display: flex; align-items: center; padding-left: 6px; font-size: 10px; color: #fff;
+        }
+        .time-bar.active-study { background: var(--highlight-study); }
+        .time-bar.active-break { background: var(--highlight-break); color: #4A5568; }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 15px; }
+        .calendar-day-header { text-align: center; font-weight: bold; font-size: 12px; }
+        .calendar-day-cell { background: #fff; border: 1px solid #E2E8F0; min-height: 70px; padding: 6px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+
+        .tip-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 10px; }
+
+        .page { display: none; }
+        .page.active { display: block; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <span class="tag">DINNER MENU</span>
-        <h1>오늘 저녁 뭐 먹을까?</h1>
-        <p class="subtitle">결정 장애 해결사! 버튼을 눌러 메뉴를 추천받으세요.</p>
+<div class="binder-container">
 
-        <div class="display-card" id="card">
-            <div class="emoji" id="emoji">🍽️</div>
-            <div class="menu-name" id="menuName">버튼을 눌러주세요</div>
-            <div class="menu-desc" id="menuDesc">오늘의 우운을 담아 맛있는 저녁 메뉴를 추천해드립니다!</div>
-        </div>
-
-        <button class="recommend-btn" onclick="recommendMenu()">저녁 메뉴 추천받기 ✨</button>
+    <!-- 탭 내비게이션 -->
+    <div class="nav-tabs">
+        <button class="active" onclick="switchPage('planner', this)">TODAY'S PLANNER</button>
+        <button onclick="switchPage('tips', this)">STUDY TIPS</button>
+        <button onclick="switchPage('calendar', this)">MONTHLY CALENDAR</button>
     </div>
 
-    <footer>© 오늘 뭐 먹지? All rights reserved.</footer>
+    <!-- 1. 플래너 페이지 -->
+    <div id="plannerPage" class="page active">
+        
+        <div class="planner-header">
+            <div class="header-box">
+                <div class="label">TODAY'S</div>
+                <div class="value" id="displayDate">0428</div>
+            </div>
+            <div class="header-box">
+                <div class="label">D-DAY (클릭 수정)</div>
+                <div class="value clickable" id="displayDday" onclick="editDday()">46</div>
+            </div>
+            <div class="header-box">
+                <div class="label">TOTAL TIME</div>
+                <div class="value" id="displayTotalTime" style="color: #2B6CB0;">00:00:00</div>
+            </div>
+        </div>
 
-    <script>
-        const menuList = [
-            { name: "삼겹살", emoji: "🥓", desc: "지글지글 고소한 쌈 채소와 함께하는 삼겹살 한 점!" },
-            { name: "치킨", emoji: "🍗", desc: "바삭하고 달콤 짭조름한 겉바속촉 치킨!" },
-            { name: "피자", emoji: "🍕", desc: "치즈가 늘어나는 맛있는 핫소스 듬뿍 피자!" },
-            { name: "햄버거", emoji: "🍔", desc: "두툼한 패티와 프렌치프라이의 완벽 조합!" },
-            { name: "초밥 (스시)", emoji: "🍣", desc: "깔끔하고 정갈한 신선한 초밥 한 그릇!" },
-            { name: "라면", emoji: "🍜", desc: "얼큰하고 칼칼한 국물이 당길 때는 역시 라면!" },
-            { name: "떡볶이", emoji: "🍡", desc: "매콤달콤 튀김과 순대 같이 먹는 국민 간식 떡볶이!" },
-            { name: "파스타", emoji: "🍝", desc: "고소한 크림 또는 매콤한 토마토 소스 파스타!" },
-            { name: "족발/보쌈", emoji: "🍖", desc: "쫄깃한 족발과 부드러운 보쌈, 쟁반국수까지!" },
-            { name: "카레", emoji: "🍛", desc: "진하고 진득한 안심 스파이스 카레 라이스!" },
-            { name: "짜장면/짬뽕", emoji: "🥢", desc: "불향 가득한 짬뽕 국물과 달콤한 짜장면!" },
-            { name: "돈까스", emoji: "🥩", desc: "겉은 바삭 속은 촉촉한 바삭바삭 돈까스!" },
-            { name: "타코", emoji: "🌮", desc: "멕시칸 스타일의 이국적인 감칠맛 타코!" },
-            { name: "샐러드", emoji: "🥗", desc: "오늘 저녁은 가볍고 건강하게 신선 샐러드!" },
-            { name: "스테이크", emoji: "🥩", desc: "특별한 날처럼 분위기 내고 싶은 근사한 스테이크!" }
-        ];
+        <div class="quote-box">
+            <span class="clickable" id="displayQuote" onclick="editQuote()" title="클릭하여 수정">
+                "You still have lots more to work on."
+            </span>
+            <span class="quote-heart">♥</span>
+        </div>
 
-        let lastIndex = -1;
+        <!-- 설정 영역 -->
+        <div class="config-card">
+            <h4>1. 공부 가용 시간대 설정 (여러 개 분할 가능)</h4>
+            <div id="slotContainer">
+                <div class="row time-slot-row">
+                    <input type="time" class="slot-start" value="09:00">
+                    <span>~</span>
+                    <input type="time" class="slot-end" value="13:00">
+                </div>
+            </div>
+            <button class="btn" onclick="addSlotRow()">+ 시간대 추가</button>
 
-        function recommendMenu() {
-            let randomIndex;
-            // 직전 추천과 중복되지 않도록 처리
-            do {
-                randomIndex = Math.floor(Math.random() * menuList.length);
-            } while (randomIndex === lastIndex && menuList.length > 1);
-            
-            lastIndex = randomIndex;
-            const selected = menuList[randomIndex];
+            <h4 style="margin-top: 15px;">2. 오늘 할 일 (CONTENTS)</h4>
+            <div id="taskContainer">
+                <div class="row task-input-row">
+                    <input type="text" class="task-subject" placeholder="과목" style="width: 20%;">
+                    <input type="text" class="task-desc" placeholder="세부 내용" style="width: 45%;">
+                    <input type="number" class="task-min" placeholder="소요시간(분)" style="width: 18%;">
+                    <select class="task-priority" style="width: 12%;">
+                        <option value="1">높음</option>
+                        <option value="2">중간</option>
+                        <option value="3">낮음</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" onclick="addTaskInputRow()">+ 할 일 추가</button>
+            <button class="btn btn-primary" onclick="buildPlanner()" style="margin-left: 10px;">⚡ 플래너 자동 배치</button>
+        </div>
 
-            const emojiEl = document.getElementById("emoji");
-            const nameEl = document.getElementById("menuName");
-            const descEl = document.getElementById("menuDesc");
+        <div class="planner-body">
+            <div>
+                <table class="contents-table">
+                    <thead>
+                        <tr>
+                            <th style="width:18%">과목</th>
+                            <th style="width:42%">CONTENTS</th>
+                            <th style="width:25%">시간/수정</th>
+                            <th style="width:15%; text-align:center;">체크</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contentsTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align:center; color:#A0AEC0; padding:20px 0;">
+                                플래너를 생성하면 목록이 배정됩니다.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-            // 애니메이션 리셋
-            emojiEl.classList.remove("bounce");
-            void emojiEl.offsetWidth; // reflow 발생시켜 애니메이션 재실행
+            <div>
+                <div class="timetable-title">TIMETABLE</div>
+                <div class="timetable-grid" id="timetableGrid"></div>
+            </div>
+        </div>
+    </div>
 
-            emojiEl.textContent = selected.emoji;
-            nameEl.textContent = selected.name;
-            descEl.textContent = selected.desc;
+    <!-- 2. 과목별 공부 팁 페이지 (복구됨) -->
+    <div id="tipsPage" class="page">
+        <h3>💡 과목별 공부 팁 (Subject Tips)</h3>
+        <div class="tip-card">
+            <strong>📐 수학:</strong> 개념 정리 후 오답 노트를 작성하며 유형별 문제 반복 풀이.
+        </div>
+        <div class="tip-card">
+            <strong>🇰🇷 국어:</strong> 비문학 지문은 구조 분석 중심으로, 문학은 작품의 상황과 정서 파악.
+        </div>
+        <div class="tip-card">
+            <strong>🇺🇸 영어:</strong> 매일 일정 수의 단어 암기 및 구문 독해 연습 필수.
+        </div>
+        <div class="tip-card">
+            <strong>🔬 탐구/사회:</strong> 핵심 키워드 중심의 백지 복습법 활용.
+        </div>
+    </div>
 
-            emojiEl.classList.add("bounce");
+    <!-- 3. 달력 페이지 -->
+    <div id="calendarPage" class="page">
+        <h3 style="margin-top:0;">📆 날짜별 계획 관리 (Monthly)</h3>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+</div>
+
+<script>
+    let totalSeconds = 0;
+    let timerInterval = null;
+    let currentTasksData = []; // 수정 기능을 위한 task 데이터 저장용
+
+    window.onload = function() {
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('displayDate').innerText = mm + dd;
+
+        renderTimetableGrid();
+    };
+
+    function editDday() {
+        const currentDday = document.getElementById('displayDday').innerText;
+        const newDday = prompt("변경할 D-DAY 숫자를 입력하세요:", currentDday);
+        if(newDday !== null && !isNaN(newDday) && newDday.trim() !== "") {
+            document.getElementById('displayDday').innerText = newDday;
         }
-    </script>
+    }
+
+    function editQuote() {
+        const currentQuote = document.getElementById('displayQuote').innerText;
+        const newQuote = prompt("변경할 명언이나 다짐 문구를 입력하세요:", currentQuote);
+        if(newQuote !== null && newQuote.trim() !== "") {
+            document.getElementById('displayQuote').innerText = newQuote;
+        }
+    }
+
+    function switchPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+        
+        if(pageId === 'planner') {
+            document.getElementById('plannerPage').classList.add('active');
+        } else if(pageId === 'tips') {
+            document.getElementById('tipsPage').classList.add('active');
+        } else {
+            document.getElementById('calendarPage').classList.add('active');
+            renderCalendar();
+        }
+        btn.classList.add('active');
+    }
+
+    function addSlotRow() {
+        const div = document.createElement('div');
+        div.className = 'row time-slot-row';
+        div.innerHTML = `
+            <input type="time" class="slot-start">
+            <span>~</span>
+            <input type="time" class="slot-end">
+            <button onclick="this.parentElement.remove()" style="border:none; background:none; cursor:pointer;">❌</button>
+        `;
+        document.getElementById('slotContainer').appendChild(div);
+    }
+
+    function addTaskInputRow() {
+        const div = document.createElement('div');
+        div.className = 'row task-input-row';
+        div.innerHTML = `
+            <input type="text" class="task-subject" placeholder="과목" style="width: 20%;">
+            <input type="text" class="task-desc" placeholder="세부 내용" style="width: 45%;">
+            <input type="number" class="task-min" placeholder="소요시간(분)" style="width: 18%;">
+            <select class="task-priority" style="width: 12%;">
+                <option value="1">높음</option>
+                <option value="2">중간</option>
+                <option value="3">낮음</option>
+            </select>
+            <button onclick="this.parentElement.remove()" style="border:none; background:none; cursor:pointer;">❌</button>
+        `;
+        document.getElementById('taskContainer').appendChild(div);
+    }
+
+    function renderTimetableGrid() {
+        const grid = document.getElementById('timetableGrid');
+        grid.innerHTML = '';
+        for (let h = 6; h <= 24; h++) {
+            grid.innerHTML += `
+                <div class="time-row">
+                    <div class="time-label">${h}</div>
+                    <div class="time-bar" id="time-bar-${h}"></div>
+                </div>
+            `;
+        }
+    }
+
+    function parseToMinutes(timeStr) {
+        if(!timeStr) return null;
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    }
+
+    function formatMinutes(mins) {
+        const h = Math.floor(mins / 60) % 24;
+        const m = mins % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function buildPlanner() {
+        const slotStarts = document.querySelectorAll('.slot-start');
+        const slotEnds = document.querySelectorAll('.slot-end');
+        let slots = [];
+
+        for(let i = 0; i < slotStarts.length; i++) {
+            let startMins = parseToMinutes(slotStarts[i].value);
+            let endMins = parseToMinutes(slotEnds[i].value);
+            if(startMins !== null && endMins !== null && startMins < endMins) {
+                slots.push({ start: startMins, end: endMins });
+            }
+        }
+        slots.sort((a, b) => a.start - b.start);
+
+        if(slots.length === 0) {
+            alert("활용 가능한 시간대를 최소 하나 이상 작성해주세요.");
+            return;
+        }
+
+        const subjects = document.querySelectorAll('.task-subject');
+        const descs = document.querySelectorAll('.task-desc');
+        const minsInputs = document.querySelectorAll('.task-min');
+        const priorities = document.querySelectorAll('.task-priority');
+
+        let tasks = [];
+        for(let i = 0; i < descs.length; i++) {
+            if(descs[i].value && minsInputs[i].value) {
+                tasks.push({
+                    id: Date.now() + i,
+                    subject: subjects[i].value || '일반',
+                    desc: descs[i].value,
+                    duration: parseInt(minsInputs[i].value),
+                    priority: parseInt(priorities[i].value),
+                    elementIndex: i
+                });
+            }
+        }
+
+        if(tasks.length === 0) {
+            alert("오늘 할 일을 입력해주세요.");
+            return;
+        }
+
+        tasks.sort((a, b) => a.priority - b.priority);
+
+        renderTimetableGrid();
+        let tbody = document.getElementById('contentsTableBody');
+        tbody.innerHTML = '';
+
+        let taskIdx = 0;
+        
+        slots.forEach(slot => {
+            let cur = slot.start;
+
+            while(cur < slot.end && taskIdx < tasks.length) {
+                let task = tasks[taskIdx];
+                let available = slot.end - cur;
+
+                if(available >= 15) {
+                    let studyMins = Math.min(task.duration, available);
+                    let startTimeStr = formatMinutes(cur);
+                    let endTimeStr = formatMinutes(cur + studyMins);
+
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight:bold;">${task.subject}</td>
+                        <td>${task.desc}</td>
+                        <td>
+                            ${studyMins}분 (${startTimeStr}~${endTimeStr})<br>
+                            <button class="btn-edit-time" onclick="modifyTaskTime(${task.elementIndex}, ${task.duration})">시간 수정</button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="check-btn" onclick="toggleTaskTimer(this)">☐</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    fillTimetable(cur, cur + studyMins, `${task.subject} - ${task.desc}`, 'study');
+
+                    cur += studyMins;
+                    taskIdx++;
+
+                    if(slot.end - cur >= 10) {
+                        fillTimetable(cur, cur + 10, '☕ 휴식', 'break');
+                        cur += 10;
+                    }
+                } else {
+                    break;
+                }
+            }
+        });
+    }
+
+    // 일찍 끝나거나 모자랄 때 각 항목별 시간 직접 수정 기능
+    function modifyTaskTime(elementIndex, oldDuration) {
+        const newDuration = prompt("변경할 소요 시간(분)을 입력하세요 (예: 시간이 덜 걸렸거나 모자란 경우):", oldDuration);
+        if (newDuration !== null && !isNaN(newDuration) && newDuration.trim() !== "") {
+            document.querySelectorAll('.task-min')[elementIndex].value = newDuration;
+            alert("시간이 수정되었습니다. [⚡ 플래너 자동 배치] 버튼을 눌러 다시 일정을 계산해주세요.");
+        }
+    }
+
+    function fillTimetable(startMins, endMins, title, type) {
+        let startHour = Math.floor(startMins / 60);
+        let endHour = Math.floor(endMins / 60);
+
+        for(let h = startHour; h <= endHour && h <= 24; h++) {
+            let bar = document.getElementById(`time-bar-${h}`);
+            if(bar) {
+                bar.innerText = title;
+                bar.className = `time-bar ${type === 'study' ? 'active-study' : 'active-break'}`;
+            }
+        }
+    }
+
+    function toggleTaskTimer(btn) {
+        btn.classList.toggle('active');
+
+        if(btn.classList.contains('active')) {
+            btn.innerText = '✓';
+            startTimer();
+        } else {
+            btn.innerText = '☐';
+            stopTimerIfNoActive();
+        }
+    }
+
+    function startTimer() {
+        if(!timerInterval) {
+            timerInterval = setInterval(() => {
+                totalSeconds++;
+                updateDisplayTime();
+            }, 1000);
+        }
+    }
+
+    function stopTimerIfNoActive() {
+        const activeBtns = document.querySelectorAll('.check-btn.active');
+        if(activeBtns.length === 0 && timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function updateDisplayTime() {
+        let h = Math.floor(totalSeconds / 3600);
+        let m = Math.floor((totalSeconds % 3600) / 60);
+        let s = totalSeconds % 60;
+
+        document.getElementById('displayTotalTime').innerText = 
+            `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+        days.forEach(d => grid.innerHTML += `<div class="calendar-day-header">${d}</div>`);
+
+        for(let i = 1; i <= 31; i++) {
+            grid.innerHTML += `
+                <div class="calendar-day-cell" onclick="addCalNote(${i})">
+                    <strong>${i}</strong>
+                    <div id="cal-memo-${i}" style="color:#4A5568; margin-top:4px;"></div>
+                </div>
+            `;
+        }
+    }
+
+    function addCalNote(day) {
+        const note = prompt(`${day}일 메모:`);
+        if(note) document.getElementById(`cal-memo-${day}`).innerText = note;
+    }
+</script>
+
 </body>
 </html>
-"""
-
-filename = "evening_menu_recommendation.html"
-with open(filename, "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print(f"File saved successfully: {filename}")
